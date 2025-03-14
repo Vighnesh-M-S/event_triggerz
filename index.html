@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Trigger System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+        }
+        input, button {
+            margin: 10px;
+            padding: 8px;
+        }
+        #triggers {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Event Trigger System</h2>
+
+    <label for="triggerName">Trigger Name:</label>
+    <input type="text" id="triggerName" placeholder="Enter trigger name">
+
+    <label for="delay">Delay (seconds):</label>
+    <input type="number" id="delay" placeholder="e.g., 10">
+
+    <label for="interval">Interval (seconds):</label>
+    <input type="number" id="interval" placeholder="e.g., 30">
+
+    <button onclick="scheduleTrigger()">Schedule Trigger</button>
+    <button onclick="listTriggers()">List Active Triggers</button>
+
+    <h3>Scheduled Triggers:</h3>
+    <ul id="triggers"></ul>
+
+    <script>
+        async function scheduleTrigger() {
+            const triggerName = document.getElementById("triggerName").value;
+            const delay = document.getElementById("delay").value;
+            const interval = document.getElementById("interval").value;
+
+            const requestData = { trigger_name: triggerName };
+            if (delay) requestData.delay_seconds = parseInt(delay);
+            if (interval) requestData.interval_seconds = parseInt(interval);
+
+            const response = await fetch("http://127.0.0.1:8000/schedule_trigger", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(requestData)
+            });
+
+            const data = await response.json();
+            alert(data.message || data.error);
+        }
+
+        async function listTriggers() {
+            const response = await fetch("http://127.0.0.1:8000/list_triggers");
+            const data = await response.json();
+            
+            const triggerList = document.getElementById("triggers");
+            triggerList.innerHTML = "";
+            
+            data.scheduled_triggers.forEach(trigger => {
+                const li = document.createElement("li");
+                li.textContent = trigger;
+                triggerList.appendChild(li);
+            });
+        }
+    </script>
+
+</body>
+</html>

@@ -1,9 +1,12 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.triggers.date import DateTrigger
+from database import get_db
+from sqlalchemy.orm import Session
+from models import Trigger
 import datetime
 
 app = FastAPI()
@@ -49,11 +52,23 @@ def list_triggers():
     jobs = scheduler.get_jobs()
     return {"scheduled_triggers": [job.id for job in jobs]}
 
+# Define Pydantic Model for JSON Body
+class RemoveTriggerRequest(BaseModel):
+    trigger_name: str
+
 @app.post("/remove_trigger")
-def remove_trigger(trigger_name: str):
+def remove_trigger(request: RemoveTriggerRequest, db: Session = Depends(get_db)):
     """Removes a scheduled trigger."""
-    scheduler.remove_job(trigger_name)
-    return {"message": f"Trigger '{trigger_name}' removed."}
+    job = scheduler.get_job(request.trigger_name)
+    if job:
+        scheduler.remove_job(request.trigger_name)
+
+    db_trigger = db.query(Trigger).filter(Trigger.name == request.trigger_name).first()
+    if db_trigger:
+        db.delete(db_trigger)
+        db.commit()
+
+    return {"message": f"Trigger '{request.trigger_name}' removed."}
 
 if __name__ == "__main__":
     import uvicorn

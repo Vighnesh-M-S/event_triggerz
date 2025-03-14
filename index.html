@@ -16,6 +16,24 @@
         }
         #triggers {
             margin-top: 20px;
+            list-style-type: none;
+            padding: 0;
+        }
+        .trigger-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px auto;
+            width: 300px;
+            background-color: #f4f4f4;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .remove-btn {
+            background-color: red;
+            color: white;
+            border: none;
+            padding: 5px;
+            cursor: pointer;
         }
     </style>
 </head>
@@ -56,6 +74,7 @@
 
             const data = await response.json();
             alert(data.message || data.error);
+            listTriggers();
         }
 
         async function listTriggers() {
@@ -64,13 +83,32 @@
             
             const triggerList = document.getElementById("triggers");
             triggerList.innerHTML = "";
-            
+
             data.scheduled_triggers.forEach(trigger => {
                 const li = document.createElement("li");
-                li.textContent = trigger;
+                li.className = "trigger-item";
+                li.innerHTML = `
+                    <span>${trigger}</span>
+                    <button class="remove-btn" onclick="removeTrigger('${trigger}')">Remove</button>
+                `;
                 triggerList.appendChild(li);
             });
         }
+
+        async function removeTrigger(triggerName) {
+            const response = await fetch("http://127.0.0.1:8000/remove_trigger", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ trigger_name: triggerName })
+            });
+
+            const data = await response.json();
+            alert(data.message || data.error);
+            listTriggers();
+        }
+
+        // Load triggers on page load
+        listTriggers();
     </script>
 
 </body>

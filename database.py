@@ -1,13 +1,18 @@
-from sqlalchemy import create_engine, Column, String, Integer
+from sqlalchemy import create_engine, Column, Integer, String, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-import redis
+import datetime
 
-# PostgreSQL Configuration
-DATABASE_URL = "postgresql://user:password@localhost/triggerz_db"
-engine = create_engine(DATABASE_URL)
+# ✅ Correct SQLite URL
+DATABASE_URL = "sqlite:///./event_triggers.db"
+
+engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-# Redis Configuration (for active triggers)
-redis_client = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()

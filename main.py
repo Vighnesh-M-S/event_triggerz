@@ -25,8 +25,10 @@ app.add_middleware(
 # Define a request model
 class TriggerRequest(BaseModel):
     trigger_name: str
+    trigger_type: str  # "scheduled" or "api"
     delay_seconds: int | None = None
     interval_seconds: int | None = None
+    payload: dict | None = None  # Store API trigger data
 
 # Function to execute when the trigger fires
 def execute_trigger(trigger_name: str):
@@ -45,28 +47,82 @@ def read_root():
 
 @app.post("/schedule_trigger")
 def schedule_trigger(request: TriggerRequest, db: Session = Depends(get_db)):
-    """Schedules a trigger to execute after a delay (one-time) or at an interval (recurring)."""
-    
+    """Schedules a trigger (scheduled or API)."""
+
+    # Check if trigger already exists
     existing_trigger = db.query(Trigger).filter(Trigger.name == request.trigger_name).first()
     if existing_trigger:
-        raise HTTPException(status_code=400, detail=f"Trigger '{request.trigger_name}' already exists.")
-    
-    if request.delay_seconds:
-        run_time = datetime.datetime.now() + datetime.timedelta(seconds=request.delay_seconds)
-        scheduler.add_job(execute_trigger, DateTrigger(run_date=run_time), args=[request.trigger_name], id=request.trigger_name, replace_existing=True)
-        trigger = Trigger(name=request.trigger_name, trigger_type="one-time", schedule=f"{request.delay_seconds}s")
+        return {"error": f"Trigger '{request.trigger_name}' already exists."}
+
+    # Store API triggers correctly with payload
+    if request.trigger_type == "api":
+        trigger = Trigger(
+            name=request.trigger_name,
+            trigger_type="api",
+            schedule="manual",
+            payload=request.payload  # Store API trigger payload
+        )
         db.add(trigger)
         db.commit()
-        return {"message": f"One-time trigger '{request.trigger_name}' scheduled in {request.delay_seconds} seconds."}
-    
-    if request.interval_seconds:
-        scheduler.add_job(execute_trigger, IntervalTrigger(seconds=request.interval_seconds), args=[request.trigger_name], id=request.trigger_name, replace_existing=True)
-        trigger = Trigger(name=request.trigger_name, trigger_type="recurring", schedule=f"every {request.interval_seconds}s")
+        return {"message": f"API trigger '{request.trigger_name}' created. It can be triggered manually."}
+
+    # Store scheduled triggers
+    if request.trigger_type == "scheduled":
+        schedule_info = None
+        if request.delay_seconds:
+            run_time = datetime.datetime.now() + datetime.timedelta(seconds=request.delay_seconds)
+            scheduler.add_job(
+                execute_trigger, 
+                DateTrigger(run_date=run_time), 
+                args=[request.trigger_name], 
+                id=request.trigger_name, 
+                replace_existing=True
+            )
+            schedule_info = f"{request.delay_seconds}s"
+        elif request.interval_seconds:
+            scheduler.add_job(
+                execute_trigger, 
+                IntervalTrigger(seconds=request.interval_seconds), 
+                args=[request.trigger_name], 
+                id=request.trigger_name, 
+                replace_existing=True
+            )
+            schedule_info = f"every {request.interval_seconds}s"
+        else:
+            return {"error": "Provide 'delay_seconds' or 'interval_seconds' for scheduled triggers."}
+
+        trigger = Trigger(
+            name=request.trigger_name,
+            trigger_type="scheduled",
+            schedule=schedule_info
+        )
         db.add(trigger)
         db.commit()
-        return {"message": f"Recurring trigger '{request.trigger_name}' set to run every {request.interval_seconds} seconds."}
+        return {"message": f"Scheduled trigger '{request.trigger_name}' set to run {schedule_info}."}
+
+    return {"error": "Invalid trigger type. Use 'scheduled' or 'api'."}
+
+
+@app.post("/trigger_api")
+def trigger_api(trigger_name: str, db: Session = Depends(get_db)):
+    """Manually execute an API trigger."""
     
-    return {"error": "Provide either 'delay_seconds' (for one-time trigger) or 'interval_seconds' (for recurring trigger)."}
+    # Fetch the API trigger from the database
+    trigger = db.query(Trigger).filter(Trigger.name == trigger_name, Trigger.trigger_type == "api").first()
+    
+    if not trigger:
+        return {"error": f"API trigger '{trigger_name}' not found."}
+
+    # Log the execution
+    log_entry = ExecutionLog(trigger_name=trigger_name)
+    db.add(log_entry)
+    db.commit()
+
+    # Ensure payload is returned as JSON
+    return {
+        "message": f"API trigger '{trigger_name}' executed.",
+        "payload": trigger.payload if trigger.payload else "No payload stored"
+    }
 
 @app.get("/list_triggers")
 def list_triggers(db: Session = Depends(get_db)):

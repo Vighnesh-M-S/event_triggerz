@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, JSON
 from sqlalchemy.orm import relationship
 from database import Base
 from datetime import datetime, timezone
@@ -10,6 +10,7 @@ class Trigger(Base):
     name = Column(String, unique=True, index=True)
     trigger_type = Column(String)  # "scheduled" or "event-driven"
     schedule = Column(String, nullable=True)  # Stores interval like "10s"
+    payload = Column(JSON, nullable=True)  # Store API request data
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     logs = relationship("ExecutionLog", back_populates="trigger")

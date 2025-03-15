@@ -14,16 +14,16 @@
             margin: 10px;
             padding: 8px;
         }
-        #triggers {
+        #triggers, #logs {
             margin-top: 20px;
             list-style-type: none;
             padding: 0;
         }
-        .trigger-item {
+        .trigger-item, .log-item {
             display: flex;
             justify-content: space-between;
             margin: 5px auto;
-            width: 300px;
+            width: 350px;
             background-color: #f4f4f4;
             padding: 10px;
             border-radius: 5px;
@@ -56,6 +56,9 @@
     <h3>Scheduled Triggers:</h3>
     <ul id="triggers"></ul>
 
+    <h3>Execution Logs:</h3>
+    <ul id="logs"></ul>
+
     <script>
         async function scheduleTrigger() {
             const triggerName = document.getElementById("triggerName").value;
@@ -84,12 +87,12 @@
             const triggerList = document.getElementById("triggers");
             triggerList.innerHTML = "";
 
-            data.scheduled_triggers.forEach(trigger => {
+            data.db_triggers.forEach(trigger => {
                 const li = document.createElement("li");
                 li.className = "trigger-item";
                 li.innerHTML = `
-                    <span>${trigger}</span>
-                    <button class="remove-btn" onclick="removeTrigger('${trigger}')">Remove</button>
+                    <span>${trigger.name} (${trigger.schedule})</span>
+                    <button class="remove-btn" onclick="removeTrigger('${trigger.name}')">Remove</button>
                 `;
                 triggerList.appendChild(li);
             });
@@ -107,8 +110,27 @@
             listTriggers();
         }
 
-        // Load triggers on page load
+        async function listLogs() {
+            const response = await fetch("http://127.0.0.1:8000/list_logs");
+            const data = await response.json();
+            
+            const logsList = document.getElementById("logs");
+            logsList.innerHTML = "";
+
+            data.forEach(log => {
+                const li = document.createElement("li");
+                li.className = "log-item";
+                li.textContent = `${log.trigger_name} executed at ${new Date(log.executed_at).toLocaleString()}`;
+                logsList.appendChild(li);
+            });
+        }
+
+        // Refresh logs every 5 seconds
+        setInterval(listLogs, 5000);
+
+        // Load triggers and logs on page load
         listTriggers();
+        listLogs();
     </script>
 
 </body>

@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy.orm import relationship
 from database import Base
 from datetime import datetime, timezone
 
@@ -10,3 +11,14 @@ class Trigger(Base):
     trigger_type = Column(String)  # "scheduled" or "event-driven"
     schedule = Column(String, nullable=True)  # Stores interval like "10s"
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    logs = relationship("ExecutionLog", back_populates="trigger")
+
+class ExecutionLog(Base):
+    __tablename__ = "execution_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    trigger_name = Column(String, ForeignKey("triggers.name"))  # Foreign key to link with Trigger
+    executed_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))  # Execution time
+
+    trigger = relationship("Trigger", back_populates="logs")  # Relationship to trigger

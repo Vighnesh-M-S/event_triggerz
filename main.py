@@ -4,9 +4,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.triggers.date import DateTrigger
-from database import get_db
+from database import get_db, SessionLocal
 from sqlalchemy.orm import Session
-from models import Trigger
+from models import Trigger, ExecutionLog
 import datetime
 
 app = FastAPI()
@@ -31,6 +31,13 @@ class TriggerRequest(BaseModel):
 # Function to execute when the trigger fires
 def execute_trigger(trigger_name: str):
     print(f"Trigger '{trigger_name}' executed at {datetime.datetime.now()}")
+
+     # Store execution log in the database
+    db = SessionLocal()
+    log_entry = ExecutionLog(trigger_name=trigger_name)
+    db.add(log_entry)
+    db.commit()
+    db.close()
 
 @app.get("/")
 def read_root():
@@ -73,6 +80,12 @@ def list_triggers(db: Session = Depends(get_db)):
         "db_triggers": [{"name": t.name, "type": t.trigger_type, "schedule": t.schedule} for t in db_triggers],
         "active_triggers": active_triggers
     }
+
+@app.get("/list_logs")
+def list_logs(db: Session = Depends(get_db)):
+    """Fetch all execution logs."""
+    logs = db.query(ExecutionLog).all()
+    return [{"trigger_name": log.trigger_name, "executed_at": log.executed_at} for log in logs]
 
 # Define Pydantic Model for JSON Body
 class RemoveTriggerRequest(BaseModel):

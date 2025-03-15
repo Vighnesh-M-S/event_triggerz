@@ -198,3 +198,16 @@ Content-Type: application/json
 
 The frontend is accessible via `index.html` at:  
 🔗 [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
+
+## 📚 Credits & Resources
+
+During the development of this project, the following resources were used:
+
+- **ChatGPT** - Assistance with debugging, SQL queries, and FastAPI implementation.
+- **FastAPI Documentation** - Official documentation for building and deploying APIs. [FastAPI Docs](https://fastapi.tiangolo.com/)
+- **Render** - Cloud deployment service for hosting the application. [Render](https://render.com/)
+- **Docker Documentation** - Used for containerizing the application. [Docker Docs](https://docs.docker.com/)
+- **SQLAlchemy Documentation** - ORM used for managing the database. [SQLAlchemy Docs](https://www.sqlalchemy.org/)
+- **SQLite** - The database used for local development. [SQLite Docs](https://www.sqlite.org/)
+- **Stack Overflow** - Solutions to various programming issues encountered.
+

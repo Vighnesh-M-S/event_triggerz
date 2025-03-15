@@ -65,7 +65,10 @@
     <textarea id="payload" placeholder='{"message": "Your API data"}'></textarea>
 
     <button onclick="scheduleTrigger()">Schedule Trigger</button>
-    <button onclick="listTriggers()">List Active Triggers</button>
+    <button onclick="testScheduledTrigger()">Test Scheduled Trigger</button>
+    <br>
+    <button onclick="createApiTrigger()">Create API Trigger</button>
+    <button onclick="testApiTrigger()">Test API Trigger</button>
 
     <h3>Scheduled Triggers:</h3>
     <ul id="triggers"></ul>
@@ -81,25 +84,10 @@
             const triggerName = document.getElementById("triggerName").value;
             const delay = document.getElementById("delay").value;
             const interval = document.getElementById("interval").value;
-            const payload = document.getElementById("payload").value;
 
-            const requestData = { trigger_name: triggerName };
-            
-            if (delay) {
-                requestData.trigger_type = "scheduled";
-                requestData.delay_seconds = parseInt(delay);
-            } else if (interval) {
-                requestData.trigger_type = "scheduled";
-                requestData.interval_seconds = parseInt(interval);
-            } else {
-                requestData.trigger_type = "api";
-                try {
-                    requestData.payload = JSON.parse(payload);
-                } catch (e) {
-                    alert("Invalid JSON in Payload!");
-                    return;
-                }
-            }
+            const requestData = { trigger_name: triggerName, trigger_type: "scheduled" };
+            if (delay) requestData.delay_seconds = parseInt(delay);
+            if (interval) requestData.interval_seconds = parseInt(interval);
 
             const response = await fetch("http://127.0.0.1:8000/schedule_trigger", {
                 method: "POST",
@@ -110,6 +98,65 @@
             const data = await response.json();
             alert(data.message || data.error);
             listTriggers();
+        }
+
+        async function testScheduledTrigger() {
+            const triggerName = document.getElementById("triggerName").value;
+            const delay = document.getElementById("delay").value;
+
+            const requestData = { trigger_name: triggerName, trigger_type: "scheduled", delay_seconds: parseInt(delay) };
+
+            const response = await fetch("http://127.0.0.1:8000/test_trigger", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(requestData)
+            });
+
+            const data = await response.json();
+            alert(`Tested Scheduled Trigger: ${data.message || data.error}`);
+        }
+
+        async function createApiTrigger() {
+            const triggerName = document.getElementById("triggerName").value;
+            const payload = document.getElementById("payload").value;
+
+            try {
+                const parsedPayload = JSON.parse(payload);
+                const requestData = { trigger_name: triggerName, trigger_type: "api", payload: parsedPayload };
+
+                const response = await fetch("http://127.0.0.1:8000/schedule_trigger", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(requestData)
+                });
+
+                const data = await response.json();
+                alert(data.message || data.error);
+                listTriggers();
+            } catch (e) {
+                alert("Invalid JSON in payload!");
+            }
+        }
+
+        async function testApiTrigger() {
+            const triggerName = document.getElementById("triggerName").value;
+            const payload = document.getElementById("payload").value;
+
+            try {
+                const parsedPayload = JSON.parse(payload);
+                const requestData = { trigger_name: triggerName, trigger_type: "api", payload: parsedPayload };
+
+                const response = await fetch("http://127.0.0.1:8000/test_trigger", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(requestData)
+                });
+
+                const data = await response.json();
+                alert(`Tested API Trigger: ${JSON.stringify(data)}`);
+            } catch (e) {
+                alert("Invalid JSON in payload!");
+            }
         }
 
         async function listTriggers() {
@@ -128,7 +175,6 @@
                 if (trigger.type === "api") {
                     li.innerHTML = `
                         <span>${trigger.name}</span>
-                        <button class="test-btn" onclick="testApiTrigger('${trigger.name}')">Test</button>
                         <button class="trigger-btn" onclick="triggerApi('${trigger.name}')">Trigger Now</button>
                         <button class="remove-btn" onclick="removeTrigger('${trigger.name}')">Remove</button>
                     `;
@@ -152,28 +198,9 @@
 
             const data = await response.json();
             alert(data.message || data.error);
+
+            // ✅ Refresh the trigger list immediately after removal
             listTriggers();
-        }
-
-        async function triggerApi(triggerName) {
-            const response = await fetch(`http://127.0.0.1:8000/trigger_api?trigger_name=${triggerName}`, {
-                method: "POST"
-            });
-
-            const data = await response.json();
-            alert(`Triggered: ${triggerName}\nPayload: ${JSON.stringify(data.payload)}`);
-            listLogs();
-        }
-
-        async function testApiTrigger(triggerName) {
-            const response = await fetch("http://127.0.0.1:8000/test_trigger", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ trigger_name: triggerName, trigger_type: "api", payload: { "test": "Test Execution" } })
-            });
-
-            const data = await response.json();
-            alert(`Tested: ${triggerName}\nResponse: ${JSON.stringify(data)}`);
         }
 
         async function listLogs() {
@@ -191,10 +218,7 @@
             });
         }
 
-        // Refresh logs every 5 seconds
         setInterval(listLogs, 5000);
-
-        // Load triggers and logs on page load
         listTriggers();
         listLogs();
     </script>

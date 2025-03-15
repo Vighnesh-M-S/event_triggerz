@@ -149,19 +149,52 @@ class RemoveTriggerRequest(BaseModel):
 
 @app.post("/remove_trigger")
 def remove_trigger(request: RemoveTriggerRequest, db: Session = Depends(get_db)):
-    """Removes a scheduled trigger from both the database and scheduler."""
+    """Removes a scheduled or API trigger."""
     
-    job = scheduler.get_job(request.trigger_name)
-    if job:
+    # Check if the trigger exists
+    db_trigger = db.query(Trigger).filter(Trigger.name == request.trigger_name).first()
+    if not db_trigger:
+        return {"error": f"Trigger '{request.trigger_name}' not found."}
+
+    # ✅ Delete related execution logs first
+    db.query(ExecutionLog).filter(ExecutionLog.trigger_name == request.trigger_name).delete()
+
+    # ✅ Delete the trigger
+    db.delete(db_trigger)
+    db.commit()
+
+    # ✅ Remove from scheduler (if it's a scheduled trigger)
+    if scheduler.get_job(request.trigger_name):
         scheduler.remove_job(request.trigger_name)
 
-    db_trigger = db.query(Trigger).filter(Trigger.name == request.trigger_name).first()
-    if db_trigger:
-        db.delete(db_trigger)
-        db.commit()
-        return {"message": f"Trigger '{request.trigger_name}' removed from database and scheduler."}
+    return {"message": f"Trigger '{request.trigger_name}' removed successfully."}
+
+# User testing_trigger does not store it in data base
+@app.post("/test_trigger")
+def test_trigger(request: TriggerRequest):
+    """Execute a one-time test trigger without saving it in the database."""
     
-    return {"error": f"Trigger '{request.trigger_name}' not found."}
+    if request.trigger_type == "scheduled":
+        if request.delay_seconds:
+            run_time = datetime.datetime.now() + datetime.timedelta(seconds=request.delay_seconds)
+            scheduler.add_job(
+                execute_trigger, 
+                DateTrigger(run_date=run_time), 
+                args=[request.trigger_name], 
+                id=f"test_{request.trigger_name}", 
+                replace_existing=True
+            )
+            return {"message": f"Test scheduled trigger '{request.trigger_name}' will execute in {request.delay_seconds} seconds."}
+
+        return {"error": "Provide 'delay_seconds' for scheduled test triggers."}
+    
+    elif request.trigger_type == "api":
+        return {
+            "message": f"Test API trigger '{request.trigger_name}' executed successfully.",
+            "payload": request.payload
+        }
+
+    return {"error": "Invalid trigger type. Use 'scheduled' or 'api'."}
 
 if __name__ == "__main__":
     import uvicorn

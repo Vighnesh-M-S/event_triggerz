@@ -41,18 +41,18 @@ Using SQLite (default):
 sqlite3 event_triggers.db < setup.sql
 ```
 
-## 🔹 2. Manual Database Setup Using SQLite
+### 🔹 2. Manual Database Setup Using SQLite
 
-### 📌 2.1. Open SQLite CLI
+#### 📌 2.1. Open SQLite CLI
 
 ```bash
 sqlite3 event_triggers.db
 ```
 
-### 📌 2.2. Create Tables Manually
+#### 📌 2.2. Create Tables Manually
 
 If you prefer to create tables manually, execute the following:
-#### ✅ Create triggers Table
+##### ✅ Create triggers Table
 
 ```sql
 CREATE TABLE triggers (
@@ -63,7 +63,7 @@ CREATE TABLE triggers (
     payload TEXT
 );
 ```
-#### ✅ Create execution_logs Table
+##### ✅ Create execution_logs Table
 
 ```sql
 CREATE TABLE execution_logs (
@@ -74,7 +74,7 @@ CREATE TABLE execution_logs (
 );
 ```
 
-### 📌 2.3. Verify Table Creation
+#### 📌 2.3. Verify Table Creation
 
 ```sql
 PRAGMA table_info(triggers);

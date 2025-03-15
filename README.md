@@ -14,6 +14,11 @@ A FastAPI-based event trigger system where users can schedule or manually trigge
 - **User-Friendly Web UI**: Manage and view triggers.
 - **Dockerized & Cloud-Ready**: Works with Docker, deployed on Render.
 
+## 🌐 Live Deployment
+The application is deployed on Render. You can access it here:  
+
+🔗 **[Event Trigger System](https://event-triggerz.onrender.com/)**  
+
 ## 🛠️ Local Setup (Without Docker)
 
 ### 1️⃣ Install Dependencies

@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -8,6 +9,7 @@ from database import get_db, SessionLocal
 from sqlalchemy.orm import Session
 from models import Trigger, ExecutionLog
 import datetime
+import os
 
 app = FastAPI()
 scheduler = BackgroundScheduler()
@@ -42,8 +44,8 @@ def execute_trigger(trigger_name: str):
     db.close()
 
 @app.get("/")
-def read_root():
-    return {"message": "Event Trigger System is running!"}
+def serve_home():
+    return FileResponse(os.path.join("static", "index.html"))
 
 @app.post("/schedule_trigger")
 def schedule_trigger(request: TriggerRequest, db: Session = Depends(get_db)):

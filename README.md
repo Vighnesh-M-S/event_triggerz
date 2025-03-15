@@ -40,6 +40,18 @@ Using SQLite (default):
 ```bash
 sqlite3 event_triggers.db < setup.sql
 ```
+### 🔹 1. Automatic Database Migration Using Python
+
+```bash
+python
+```
+
+```python
+from models import Base
+target_metadata = Base.metadata
+exit()
+```
+
 
 ### 🔹 2. Manual Database Setup Using SQLite
 

@@ -146,7 +146,7 @@ docker rm <ID>       # Remove container
 | POST   | `/schedule_trigger`  | Schedule a new event trigger    |
 | GET    | `/list_triggers`     | Retrieve all scheduled triggers |
 | POST   | `/remove_trigger`    | Remove a scheduled trigger      |
-
+| PUT    | `/update_trigger`    | Update an existing trigger      |
 ### 🔥 Execution & Testing
 
 | Method | Endpoint            | Description                              |
@@ -218,6 +218,32 @@ Content-Type: application/json
   "trigger_name": "api_test_trigger",
   "trigger_type": "api",
   "payload": { "message": "This is a test API trigger" }
+}
+```
+
+### 🟢 For updating trigger(scheduled)
+
+```http
+PUT /update_trigger
+Content-Type: application/json
+
+{
+  "trigger_name": "test_trigger",
+  "trigger_type": "scheduled",
+  "delay_seconds": 20
+}
+```
+
+### 🟢 For updating trigger(api)
+
+```http
+PUT /update_trigger
+Content-Type: application/json
+
+{
+  "trigger_name": "api_test_trigger",
+  "trigger_type": "api",
+  "payload": "Hello from API Trigger"
 }
 ```
 

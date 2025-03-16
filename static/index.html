@@ -128,28 +128,33 @@
     await sendRequest("POST", "/schedule_trigger", requestData);
 }
 
-        async function updateTrigger() {
-            const triggerName = document.getElementById("triggerName").value;
-            const triggerType = document.getElementById("triggerType").value;
-            const delay = document.getElementById("delay").value;
-            const interval = document.getElementById("interval").value;
-            const payload = document.getElementById("payload").value;
+async function updateTrigger() {
+    const triggerName = document.getElementById("triggerName").value.trim();
+    const triggerType = document.getElementById("triggerType").value;
+    const delay = document.getElementById("delay").value;
+    const interval = document.getElementById("interval").value;
+    const payloadMessage = document.getElementById("payload").value.trim();
 
-            const requestData = { trigger_name: triggerName, trigger_type: triggerType };
-            if (triggerType === "scheduled") {
-                if (delay) requestData.delay_seconds = parseInt(delay);
-                if (interval) requestData.interval_seconds = parseInt(interval);
-            } else if (triggerType === "api") {
-                try {
-                    requestData.payload = JSON.parse(payload);
-                } catch (e) {
-                    alert("Invalid JSON format in payload!");
-                    return;
-                }
-            }
-            await sendRequest("PUT", "/update_trigger", requestData);
+    if (!triggerName) {
+        alert("Trigger name is required.");
+        return;
+    }
+
+    const requestData = { trigger_name: triggerName, trigger_type: triggerType };
+
+    if (triggerType === "scheduled") {
+        if (delay) requestData.delay_seconds = parseInt(delay);
+        if (interval) requestData.interval_seconds = parseInt(interval);
+    } else if (triggerType === "api") {
+        if (!payloadMessage) {
+            alert("Please enter a message for the API trigger.");
+            return;
         }
+        requestData.payload = { message: payloadMessage };  // Convert string to JSON format
+    }
 
+    await sendRequest("PUT", "/update_trigger", requestData);
+}
         async function testTrigger() {
     const triggerName = document.getElementById("triggerName").value;
     const triggerType = document.getElementById("triggerType").value;

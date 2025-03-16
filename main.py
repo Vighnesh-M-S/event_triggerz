@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
+from typing import Optional
 from fastapi.middleware.cors import CORSMiddleware
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
@@ -31,6 +32,13 @@ class TriggerRequest(BaseModel):
     delay_seconds: int | None = None
     interval_seconds: int | None = None
     payload: dict | None = None  # Store API trigger data
+
+class UpdateTriggerRequest(BaseModel):
+    trigger_name: str
+    trigger_type: str  # "scheduled" or "api"
+    delay_seconds: int | None = None
+    interval_seconds: int | None = None
+    payload: dict | None = None  # Only for API triggers
 
 # Function to execute when the trigger fires
 def execute_trigger(trigger_name: str):
@@ -197,6 +205,35 @@ def test_trigger(request: TriggerRequest):
         }
 
     return {"error": "Invalid trigger type. Use 'scheduled' or 'api'."}
+
+@app.put("/update_trigger")
+def update_trigger(request: UpdateTriggerRequest, db: Session = Depends(get_db)):
+    """Updates an existing trigger (scheduled or API)."""
+    
+    # Check if trigger exists
+    trigger = db.query(Trigger).filter(Trigger.name == request.trigger_name).first()
+    if not trigger:
+        raise HTTPException(status_code=404, detail=f"Trigger '{request.trigger_name}' not found.")
+
+    # If it's a scheduled trigger, update the delay/interval and reschedule it
+    if request.trigger_type == "scheduled":
+        if request.delay_seconds:
+            new_run_time = datetime.datetime.now() + datetime.timedelta(seconds=request.delay_seconds)
+            scheduler.reschedule_job(trigger.name, trigger=DateTrigger(run_date=new_run_time))
+            trigger.schedule = f"{request.delay_seconds}s"
+        elif request.interval_seconds:
+            scheduler.reschedule_job(trigger.name, trigger=IntervalTrigger(seconds=request.interval_seconds))
+            trigger.schedule = f"every {request.interval_seconds}s"
+        else:
+            return {"error": "Provide 'delay_seconds' or 'interval_seconds' to update a scheduled trigger."}
+
+    # If it's an API trigger, update the payload
+    elif request.trigger_type == "api":
+        trigger.payload = request.payload
+
+    db.commit()
+    return {"message": f"Trigger '{request.trigger_name}' updated successfully."}
+
 
 if __name__ == "__main__":
     import uvicorn

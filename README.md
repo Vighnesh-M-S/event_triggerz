@@ -183,6 +183,7 @@ GET /list_triggers
 POST /trigger_api?trigger_name=api_test
 ```
 
+
 ### 🟢 Remove a Trigger
 
 ```http
@@ -192,6 +193,38 @@ Content-Type: application/json
 {
   "trigger_name": "test_trigger"
 }
+```
+
+### 🟢 Test a Trigger (One-time Execution Without Saving)
+
+```http
+POST /test_trigger  
+Content-Type: application/json  
+
+{
+  "trigger_name": "test_trigger",
+  "trigger_type": "scheduled",
+  "delay_seconds": 10
+}
+```
+
+### 🟢 For an API trigger test
+
+```http
+POST /test_trigger  
+Content-Type: application/json  
+
+{
+  "trigger_name": "api_test_trigger",
+  "trigger_type": "api",
+  "payload": { "message": "This is a test API trigger" }
+}
+```
+
+### 🟢 Fetch Trigger Execution Logs
+
+```http
+GET /list_logs 
 ```
 
 ### 🎨 Frontend Access
